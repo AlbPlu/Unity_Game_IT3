@@ -13,11 +13,11 @@ The game ends after finishing the final objective.
 Difficulties: Making a decent house model to do the objectives and to be interesting, making "weird things" functional.
 
 
-Secondary idea
-Game style: Souls-like fighting game
+New idea
+Game style: nature styled survival horror
 
-Gameplay: Player is in a room to get familiar with controls before being dropped into the arena to fight the boss.
-Boss will have gimmicks to mess around with the player and making it a difficult and mentally straining fight.
-Game ends when killing the boss.
+Gameplay: player is a seal trapped on an iceberg
+Player is trying to survive while being hunted by an animal
+Player objective - survive for as long as you can
 
-Difficulties: Making a decent movement feel for the player, making the boss AI and interesting moveset with gimmicks
+Difficulties: Making animal models and creating gameplay loop
