@@ -403,7 +403,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SealMovement
   speed: 5
+  slideSpeed: 12
   mouseSensitivity: 100
+  bobSpeed: 7
+  bobAmount: 0.1
   playerBody: {fileID: 539187827}
   cam: {fileID: 39666166}
 --- !u!136 &539187824
