@@ -3,6 +3,6 @@ My attempt of making a unity game with the theme "Isolation"
 
 Final idea (end goal)
 
-Game story: You are a researcher lost in the arctic, you have to find the research lab before it gets dark
+Game: You are lost in a maze, find a way to escape... But sometimes you hear rumbling and shaking as if something is moving...
 
-Gameplay: You have to explore the cold desolate arctic by walking around
+Gameplay: While exploring the maze, you have a flashlight to light your way and a notepad to help keep track of your exploration
