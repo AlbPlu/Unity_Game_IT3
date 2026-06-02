@@ -18,10 +18,6 @@ public class MazeGridGenerator : MonoBehaviour
     [Header("Shifting Settings")]
     [Tooltip("How often (in seconds) does the maze shuffle?")]
     public float shiftInterval = 15f;
-    [Tooltip("How long does the earthquake shake last?")]
-    public float shakeDuration = 2f;
-    [Tooltip("How violent is the camera shake?")]
-    public float shakeMagnitude = 0.3f;
 
     private const int gridRows = 4;
     private const int gridCols = 4;
@@ -203,14 +199,7 @@ public class MazeGridGenerator : MonoBehaviour
     IEnumerator ExecuteMazeShiftSequence()
     {
         isShifting = true;
-        Debug.LogWarning("MAZE SHIFT INITIATED! Shaking world...");
-
-        Camera mainCam = Camera.main;
-        Vector3 originalCamPos = Vector3.zero;
-
-        if (starterAssetsMovement != null) starterAssetsMovement.enabled = false;
-        CharacterController cc = playerInstance?.GetComponentInChildren<CharacterController>();
-        if (cc != null) cc.enabled = false;
+        Debug.LogWarning("MAZE SHIFT INITIATED! Shifting silently in background...");
 
         Transform roomBeneathPlayer = null;
         if (playerInstance != null)
@@ -233,28 +222,10 @@ public class MazeGridGenerator : MonoBehaviour
             if (roomBeneathPlayer != null)
             {
                 playerInstance.transform.SetParent(roomBeneathPlayer, true);
-                Debug.Log($"Player securely locked into {roomBeneathPlayer.name} structure for shifting.");
             }
         }
 
-        if (mainCam != null) originalCamPos = mainCam.transform.localPosition;
-
-        float elapsed = 0.0f;
-        while (elapsed < shakeDuration)
-        {
-            if (mainCam != null)
-            {
-                float xShake = Random.Range(-1f, 1f) * shakeMagnitude;
-                float zShake = Random.Range(-1f, 1f) * shakeMagnitude;
-                mainCam.transform.localPosition = originalCamPos + new Vector3(xShake, 0f, zShake);
-            }
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        if (mainCam != null) mainCam.transform.localPosition = originalCamPos; 
-
-        // Sliding Step runs with full awareness of player position
+        // Execute the slide logic with full spatial coordinate safety locks active
         SlidingPuzzleStep();
 
         if (playerInstance != null)
@@ -262,17 +233,18 @@ public class MazeGridGenerator : MonoBehaviour
             playerInstance.transform.SetParent(null, true); 
         }
 
-        if (starterAssetsMovement != null) starterAssetsMovement.enabled = true;
-        if (cc != null) cc.enabled = true;
-
         isShifting = false;
         Debug.Log("Maze shift complete. Rooms locked.");
+        yield return null;
     }
 
     private GameObject lastMovedRoom = null;
 
     void SlidingPuzzleStep()
     {
+        // Calculate EXACT safety bounds based on player footprint coordinates
+        HashSet<Vector2Int> lockedPlayerCoordinates = GetPlayerOccupiedGridCoords();
+
         for (int step = 0; step < 2; step++)
         {
             List<Vector2Int> emptySlots = new List<Vector2Int>();
@@ -304,28 +276,17 @@ public class MazeGridGenerator : MonoBehaviour
                     Vector2Int checkPos = targetEmpty + dir;
                     if (checkPos.x >= 0 && checkPos.x < gridRows && checkPos.y >= 0 && checkPos.y < gridCols)
                     {
+                        // NEW CRITICAL PROTECTION: If the player footprint overlaps this coordinate, 
+                        // completely lock it down from sliding into an empty slot!
+                        if (lockedPlayerCoordinates.Contains(checkPos))
+                        {
+                            continue;
+                        }
+
                         GameObject potentialRoom = spawnedGrid[checkPos.x, checkPos.y];
                         
-                        // DOORWAY GUARD SAFETY CHECK:
-                        // Skips shifting this room if the player is dangerously close to its center bounds (standing in its threshold)
                         if (potentialRoom != null && potentialRoom != lastMovedRoom)
                         {
-                            if (playerInstance != null)
-                            {
-                                // Calculate distance in 2D horizontal space between player and the room's core position
-                                float distToRoom = Vector2.Distance(
-                                    new Vector2(playerInstance.transform.position.x, playerInstance.transform.position.z),
-                                    new Vector2(potentialRoom.transform.position.x, potentialRoom.transform.position.z)
-                                );
-
-                                // If the player is on the edge/doorway of this room, protect them by locking this room down!
-                                float safetyRadius = roomSize * 0.65f; 
-                                if (distToRoom > (roomSize * 0.4f) && distToRoom < safetyRadius)
-                                {
-                                    continue; // Skip and try a different neighbor room layout
-                                }
-                            }
-
                             eligibleNeighbors.Add(checkPos);
                         }
                     }
@@ -338,6 +299,8 @@ public class MazeGridGenerator : MonoBehaviour
                         Vector2Int checkPos = targetEmpty + dir;
                         if (checkPos.x >= 0 && checkPos.x < gridRows && checkPos.y >= 0 && checkPos.y < gridCols)
                         {
+                            if (lockedPlayerCoordinates.Contains(checkPos)) continue;
+
                             if (spawnedGrid[checkPos.x, checkPos.y] != null) eligibleNeighbors.Add(checkPos);
                         }
                     }
@@ -364,6 +327,64 @@ public class MazeGridGenerator : MonoBehaviour
             }
         }
         lastMovedRoom = null;
+    }
+
+    /// <summary>
+    /// Calculates exactly which grid slots the player is currently occupying or crossing over.
+    /// Includes a safety buffer threshold to completely lock down adjacent rooms if standing near a border.
+    /// </summary>
+    HashSet<Vector2Int> GetPlayerOccupiedGridCoords()
+    {
+        HashSet<Vector2Int> protectedCoords = new HashSet<Vector2Int>();
+        if (playerInstance == null) return protectedCoords;
+
+        Vector3 pPos = playerInstance.transform.position;
+
+        // Convert world horizontal coordinates back into float grid coordinates
+        float colFloat = pPos.x / roomSize;
+        float rowFloat = pPos.z / roomSize;
+
+        // Find the absolute core room cell index the player anchor sits on
+        int coreCol = Mathf.RoundToInt(colFloat);
+        int coreRow = Mathf.RoundToInt(rowFloat);
+
+        // Add the core cell to the safety array lock
+        Vector2Int coreCell = new Vector2Int(coreRow, coreCol);
+        if (coreCell.x >= 0 && coreCell.x < gridRows && coreCell.y >= 0 && coreCell.y < gridCols)
+        {
+            protectedCoords.Add(coreCell);
+        }
+
+        // Safety border threshold calculation (0.15 room width buffer zone)
+        float borderSafetyPadding = 0.50f; 
+        float colRemainder = colFloat - coreCol;
+        float rowRemainder = rowFloat - coreRow;
+
+        // Checking West/East threshold crossings
+        if (colRemainder < -borderSafetyPadding) protectedCoords.Add(new Vector2Int(coreRow, coreCol - 1));
+        if (colRemainder > borderSafetyPadding) protectedCoords.Add(new Vector2Int(coreRow, coreCol + 1));
+
+        // Checking South/North threshold crossings
+        if (rowRemainder < -borderSafetyPadding) protectedCoords.Add(new Vector2Int(coreRow - 1, coreCol));
+        if (rowRemainder > borderSafetyPadding) protectedCoords.Add(new Vector2Int(coreRow + 1, coreCol));
+
+        // Diagonal corner safety lock catch mechanism
+        if (colRemainder < -borderSafetyPadding && rowRemainder < -borderSafetyPadding) protectedCoords.Add(new Vector2Int(coreRow - 1, coreCol - 1));
+        if (colRemainder > borderSafetyPadding && rowRemainder < -borderSafetyPadding) protectedCoords.Add(new Vector2Int(coreRow - 1, coreCol + 1));
+        if (colRemainder < -borderSafetyPadding && rowRemainder > borderSafetyPadding) protectedCoords.Add(new Vector2Int(coreRow + 1, coreCol - 1));
+        if (colRemainder > borderSafetyPadding && rowRemainder > borderSafetyPadding) protectedCoords.Add(new Vector2Int(coreRow + 1, coreCol + 1));
+
+        // Filter and remove out-of-bounds math entries safely before return
+        HashSet<Vector2Int> filteredCoords = new HashSet<Vector2Int>();
+        foreach (Vector2Int coord in protectedCoords)
+        {
+            if (coord.x >= 0 && coord.x < gridRows && coord.y >= 0 && coord.y < gridCols)
+            {
+                filteredCoords.Add(coord);
+            }
+        }
+
+        return filteredCoords;
     }
 
     void BuildOuterPerimeter()
