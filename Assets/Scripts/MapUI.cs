@@ -7,11 +7,14 @@ public class MapUI : MonoBehaviour
     [Tooltip("Drag your _GridManager object here.")]
     public MazeGridGenerator gridGenerator;
 
+    [Tooltip("Drag your active moving Main Camera here so the map can calculate your position.")]
+    public Transform playerCamera;
+
     [Header("UI Setup")]
     [Tooltip("Drag your Map_Overlay_Panel here.")]
     public GameObject mapPanel;
     
-    [Tooltip("Drag your Grid_Container here. Ensure it has a Grid Layout Group component!")]
+    [Tooltip("Drag your Grid_Container here.")]
     public Transform gridContainer;
 
     [Tooltip("Drag your disabled Room_Template Image object here.")]
@@ -24,8 +27,12 @@ public class MapUI : MonoBehaviour
     public Color pinkRoomColor   = new Color(0.85f, 0.3f, 0.6f, 1f);
     public Color yellowRoomColor = new Color(0.85f, 0.75f, 0.15f, 1f);
     
-    [Tooltip("The background color for empty slots or abyss void spaces.")]
-    public Color emptySpaceColor = new Color(0.06f, 0.06f, 0.06f, 0.85f);
+    [Header("Visibility Tones")]
+    [Tooltip("The color for empty slots that are right next to the player.")]
+    public Color adjacentEmptyColor = new Color(0.18f, 0.18f, 0.18f, 1f);
+    
+    [Tooltip("The color for unrevealed rooms completely outside the player's immediate view.")]
+    public Color fogOfWarHiddenColor = new Color(0.02f, 0.02f, 0.02f, 1f);
 
     private bool isMapOpen = false;
 
@@ -33,6 +40,12 @@ public class MapUI : MonoBehaviour
     {
         if (mapPanel != null) mapPanel.SetActive(false);
         if (roomPrefabTemplate != null) roomPrefabTemplate.SetActive(false);
+
+        // Auto-assign camera fallback if left unassigned
+        if (playerCamera == null && Camera.main != null)
+        {
+            playerCamera = Camera.main.transform;
+        }
     }
 
     void Update()
@@ -48,13 +61,24 @@ public class MapUI : MonoBehaviour
                 GenerateProceduralMap();
             }
         }
+
+        // Keep updating live so if the maze shuffles while the map is open, it reflects instantly
+        if (isMapOpen)
+        {
+            GenerateProceduralMap();
+        }
     }
 
     public void GenerateProceduralMap()
     {
-        if (gridGenerator == null || gridContainer == null || roomPrefabTemplate == null) return;
+        if (gridGenerator == null || gridContainer == null || roomPrefabTemplate == null || playerCamera == null) return;
 
-        // 1. Wipe old cells cleanly to draw the current live state
+        // 1. Calculate the player's live grid coordinate from the camera position
+        float roomSize = gridGenerator.roomSize;
+        int playerCol = Mathf.RoundToInt(playerCamera.position.x / roomSize);
+        int playerRow = Mathf.RoundToInt(playerCamera.position.z / roomSize);
+
+        // 2. Wipe old cells to cleanly re-draw the proximity layout frame
         foreach (Transform child in gridContainer)
         {
             if (child.gameObject == roomPrefabTemplate) continue;
@@ -64,47 +88,60 @@ public class MapUI : MonoBehaviour
         GameObject[,] currentGrid = gridGenerator.GetLiveGrid();
         if (currentGrid == null) return;
 
-        // 2. Loop through row layers from top down (3 down to 0) to match screen layout positions
+        // 3. Loop through grid from top UI row down to bottom
         for (int row = 3; row >= 0; row--)
         {
             for (int col = 0; col < 4; col++)
             {
-                // 3. Generate a distinct cell instance from the baseline template configuration
+                // Create a clean cell box from our template
                 GameObject newCell = Instantiate(roomPrefabTemplate, gridContainer);
                 newCell.SetActive(true);
-                newCell.name = $"UI_Cell_R{row}_C{col}";
 
                 Image cellImage = newCell.GetComponent<Image>();
                 if (cellImage != null)
                 {
-                    GameObject roomObject = currentGrid[row, col];
+                    // 4. Calculate grid distance away from the player's current room
+                    int rowDistance = Mathf.Abs(row - playerRow);
+                    int colDistance = Mathf.Abs(col - playerCol);
 
-                    if (roomObject != null)
+                    // Check if this box is the current room OR a direct perpendicular neighbor 
+                    // (North, South, East, West—meaning total distance change equals 1)
+                    bool isCurrentRoom = (row == playerRow && col == playerCol);
+                    bool isDirectNeighbor = (rowDistance + colDistance == 1);
+
+                    if (isCurrentRoom || isDirectNeighbor)
                     {
-                        // 4. Extract the active runtime color tag string name assigned by the grid generator
-                        string roomNameLower = roomObject.name.ToLower();
+                        // Visually reveal what is actually here!
+                        GameObject roomObject = currentGrid[row, col];
 
-                        if (roomNameLower.Contains("blue"))        cellImage.color = blueRoomColor;
-                        else if (roomNameLower.Contains("red"))    cellImage.color = redRoomColor;
-                        else if (roomNameLower.Contains("green"))  cellImage.color = greenRoomColor;
-                        else if (roomNameLower.Contains("pink"))   cellImage.color = pinkRoomColor;
-                        else if (roomNameLower.Contains("yellow")) cellImage.color = yellowRoomColor;
+                        if (roomObject != null)
+                        {
+                            // It's a valid room structure -> apply its distinctive color tag
+                            string roomNameLower = roomObject.name.ToLower();
+
+                            if (roomNameLower.Contains("blue"))        cellImage.color = blueRoomColor;
+                            else if (roomNameLower.Contains("red"))    cellImage.color = redRoomColor;
+                            else if (roomNameLower.Contains("green"))  cellImage.color = greenRoomColor;
+                            else if (roomNameLower.Contains("pink"))   cellImage.color = pinkRoomColor;
+                            else if (roomNameLower.Contains("yellow")) cellImage.color = yellowRoomColor;
+                            else                                       cellImage.color = Color.gray;
+                        }
                         else
                         {
-                            // Fallback color if a room variant doesn't have an explicit color string signature
-                            cellImage.color = new Color(0.4f, 0.4f, 0.4f, 1f); 
+                            // It's an empty gap right next to the player -> light up as a dark gray path anomaly
+                            cellImage.color = adjacentEmptyColor;
                         }
                     }
                     else
                     {
-                        // Match empty slot spaces to the dark void color theme configuration
-                        cellImage.color = emptySpaceColor;
+                        // Completely outside the player's localized awareness sphere -> hide in pure dark fog
+                        cellImage.color = fogOfWarHiddenColor;
                     }
                 }
             }
         }
 
-        // 5. Instantly force the UI engine layout calculations to refresh positions on this frame execution
+        // 5. Force UI to instantly snap elements to alignment shapes
         LayoutRebuilder.ForceRebuildLayoutImmediate(gridContainer.GetComponent<RectTransform>());
     }
 }

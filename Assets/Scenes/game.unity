@@ -25,7 +25,7 @@ RenderSettings:
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
   m_AmbientMode: 3
-  m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
+  m_SubtractiveShadowColor: {r: 0, g: 0, b: 0, a: 1}
   m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
@@ -228,11 +228,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapUI
   gridGenerator: {fileID: 1732887951}
+  playerCamera: {fileID: 1213663196}
   mapPanel: {fileID: 631945872}
   gridContainer: {fileID: 984997263}
   roomPrefabTemplate: {fileID: 2113955554}
-  roomColor: {r: 0.3, g: 0.3, b: 0.3, a: 1}
-  emptySpaceColor: {r: 0, g: 0, b: 0, a: 1}
+  blueRoomColor: {r: 0.15, g: 0.35, b: 0.8, a: 1}
+  redRoomColor: {r: 0.8, g: 0.15, b: 0.15, a: 1}
+  greenRoomColor: {r: 0.15, g: 0.65, b: 0.25, a: 1}
+  pinkRoomColor: {r: 0.85, g: 0.3, b: 0.6, a: 1}
+  yellowRoomColor: {r: 0.85, g: 0.75, b: 0.15, a: 1}
+  adjacentEmptyColor: {r: 0.18, g: 0.18, b: 0.18, a: 1}
+  fogOfWarHiddenColor: {r: 0.02, g: 0.02, b: 0.02, a: 1}
 --- !u!114 &843429528
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -532,6 +538,22 @@ PrefabInstance:
     - target: {fileID: 2862278905927072854, guid: 035bf1ba97d19214580cfe6f5a29fdc3, type: 3}
       propertyPath: m_StreamingVersion
       value: 20241001
+      objectReference: {fileID: 0}
+    - target: {fileID: 5126527961139664767, guid: 035bf1ba97d19214580cfe6f5a29fdc3, type: 3}
+      propertyPath: m_ClearFlags
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5126527961139664767, guid: 035bf1ba97d19214580cfe6f5a29fdc3, type: 3}
+      propertyPath: m_BackGroundColor.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5126527961139664767, guid: 035bf1ba97d19214580cfe6f5a29fdc3, type: 3}
+      propertyPath: m_BackGroundColor.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5126527961139664767, guid: 035bf1ba97d19214580cfe6f5a29fdc3, type: 3}
+      propertyPath: m_BackGroundColor.r
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6556307555316582679, guid: 035bf1ba97d19214580cfe6f5a29fdc3, type: 3}
       propertyPath: m_LocalPosition.x
