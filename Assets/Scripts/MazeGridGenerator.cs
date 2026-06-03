@@ -28,6 +28,7 @@ public class MazeGridGenerator : MonoBehaviour
 
     private GameObject playerInstance;
     private FirstPersonController starterAssetsMovement; 
+    [HideInInspector] public float survivalTimer = 0f;
 
     void Start()
     {
@@ -46,6 +47,7 @@ public class MazeGridGenerator : MonoBehaviour
 
     void Update()
     {
+        survivalTimer += Time.deltaTime;
         shiftTimer -= Time.deltaTime;
         if (shiftTimer <= 0f && !isShifting)
         {

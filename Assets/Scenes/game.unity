@@ -540,6 +540,10 @@ PrefabInstance:
       value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 453084650579209848, guid: 035bf1ba97d19214580cfe6f5a29fdc3, type: 3}
+      propertyPath: JumpHeight
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 453084650579209848, guid: 035bf1ba97d19214580cfe6f5a29fdc3, type: 3}
       propertyPath: SprintSpeed
       value: 3
       objectReference: {fileID: 0}
@@ -757,6 +761,7 @@ MonoBehaviour:
   wallHeight: 5
   wallThickness: 0.01
   shiftInterval: 60
+  survivalTimer: 0
 --- !u!1 &2113955554
 GameObject:
   m_ObjectHideFlags: 0
