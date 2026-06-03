@@ -465,4 +465,10 @@ public class MazeGridGenerator : MonoBehaviour
         if (nameLower.Contains("yellow")) return "yellow";
         return "";
     }
+
+    public GameObject[,] GetLiveGrid()
+    {
+        return spawnedGrid;
+    }
+
 }
