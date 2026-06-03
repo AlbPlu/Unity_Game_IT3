@@ -119,11 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!4 &3007231 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 6556307555316582679, guid: 035bf1ba97d19214580cfe6f5a29fdc3, type: 3}
-  m_PrefabInstance: {fileID: 1454846961}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1213663196 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5126527961139664760, guid: 035bf1ba97d19214580cfe6f5a29fdc3, type: 3}
@@ -365,7 +360,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74a1e7be33554f448a5775debe0ca320, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AtmosphereAudioDirector
-  playerTransform: {fileID: 3007231}
+  playerTransform: {fileID: 1213663196}
   continuousAmbianceClip: {fileID: 8300000, guid: 2129dca79620ec445ab6c6886511066d, type: 3}
   ambianceVolume: 0.07
   closeScaresPool:
@@ -375,16 +370,16 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 2b00c3a00b84d2041a21c05556a9d680, type: 3}
   - {fileID: 8300000, guid: ab03511fae123a542b9477a8c60cc55f, type: 3}
   - {fileID: 8300000, guid: b7127535a301d864ab2c36710ba2c5e5, type: 3}
-  minCloseDistance: 5
-  maxCloseDistance: 12
+  minCloseDistance: 4
+  maxCloseDistance: 8
   distantScaresPool:
   - {fileID: 8300000, guid: 0f1a2996f17f4014eafb4a6fbef5e1f8, type: 3}
   - {fileID: 8300000, guid: ea4d9d156fa2e88469ae690e5b675c3a, type: 3}
   - {fileID: 8300000, guid: c1ec6ef4022f8aa419fec8e16207aa2a, type: 3}
   - {fileID: 8300000, guid: 4d8d8c8b47641694aa00d1619d7d2004, type: 3}
   - {fileID: 8300000, guid: c214f185ea1524f46bec21b15865dbb0, type: 3}
-  minDistantRange: 16
-  maxDistantRange: 30
+  minDistantRange: 10
+  maxDistantRange: 20
   minSecondsBetweenScares: 20
   maxSecondsBetweenScares: 35
   roomUnitSize: 22
