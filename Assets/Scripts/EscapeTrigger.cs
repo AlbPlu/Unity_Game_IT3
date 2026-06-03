@@ -2,9 +2,8 @@ using UnityEngine;
 using System.Collections;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using TMPro;
 
-// NOTE: I changed the class name below to 'EscapeTrigger' so it perfectly 
-// matches your Unity file name 'EscapeTrigger.cs'. This will fix your compilation!
 public class EscapeTrigger : MonoBehaviour
 {
     [Header("Abyss Height Trigger")]
@@ -12,17 +11,16 @@ public class EscapeTrigger : MonoBehaviour
     public float escapeHeightThreshold = -5f;
 
     [Header("The Independent Movie Set")]
-    [Tooltip("Drag your Abyss_Cutscene_Set object here.")]
     public GameObject abyssCutsceneSet;
-    
-    [Tooltip("Drag your Cutscene_Player_Dummy object here so the script can play its sound directly!")]
     public AudioSource cutsceneAudioSource;
 
+    [Header("Gameplay Camera to Track & Disable")]
+    [Tooltip("Drag your player's moving Main Camera here. The script will monitor THIS object's height!")]
+    public GameObject gameplayCamera; 
+
     [Header("UI Victory Screens (Optional)")]
-    [Tooltip("Drag your Victory_Screen panel here.")]
     public GameObject victoryScreenPanel;
-    [Tooltip("Drag your TimeDisplayText UI element here.")]
-    public Text timeDisplayMesh;
+    public TextMeshProUGUI timeDisplayMesh;
 
     private MazeGridGenerator gridManager;
     private bool cutsceneStarted = false;
@@ -35,13 +33,17 @@ public class EscapeTrigger : MonoBehaviour
 
     void Update()
     {
-        // Detect when the live player slips past the maze floor bounds
-        if (transform.position.y <= escapeHeightThreshold && !cutsceneStarted)
+        // 1. Safety check to make sure you dragged the camera into the slot
+        if (gameplayCamera != null && !cutsceneStarted)
         {
-            StartCoroutine(SwitchToForcedCutscene());
+            // 2. Track the ACTUAL moving camera's Y position in the world!
+            if (gameplayCamera.transform.position.y <= escapeHeightThreshold)
+            {
+                StartCoroutine(SwitchToForcedCutscene());
+            }
         }
 
-        // Quick restart testing shortcut 
+        // Quick restart testing shortcut (Only works after cutscene begins)
         if (cutsceneStarted && Input.GetKeyDown(KeyCode.R))
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
@@ -52,26 +54,29 @@ public class EscapeTrigger : MonoBehaviour
     {
         cutsceneStarted = true;
 
-        // 1. Instantly activate our independent cutscene movie set 
+        // 1. Turn on the cinematic movie set
         if (abyssCutsceneSet != null)
         {
             abyssCutsceneSet.SetActive(true);
         }
 
-        // 2. Play the meme scream sound at a adjusted 0.6f volume level
+        // 2. Play the scream sound
         if (cutsceneAudioSource != null)
         {
             cutsceneAudioSource.volume = 0.6f; 
             cutsceneAudioSource.Play();
         }
 
-        // 3. Hide/Disable the live gameplay player entirely so they vanish instantly
-        this.gameObject.SetActive(false);
+        // 3. Turn off the gameplay camera so the player loses control/vision
+        if (gameplayCamera != null)
+        {
+            gameplayCamera.SetActive(false);
+        }
 
-        // 4. Let the frontflip animation play out for 2.5 seconds
+        // 4. Wait out the frontflip animation sequence
         yield return new WaitForSeconds(2.5f);
 
-        // 5. Smoothly turn the sound down over 1 second to simulate falling away
+        // 5. Smoothly fade the sound away
         if (cutsceneAudioSource != null)
         {
             float fadeDuration = 1.0f;
@@ -84,7 +89,7 @@ public class EscapeTrigger : MonoBehaviour
             cutsceneAudioSource.Stop();
         }
 
-        // 6. Calculate and display final completion times from your generator
+        // 6. Calculate times from your generator
         if (gridManager != null)
         {
             float totalSeconds = gridManager.survivalTimer;
@@ -97,11 +102,11 @@ public class EscapeTrigger : MonoBehaviour
             }
         }
 
-        // Unlock mouse cursor
+        // Unlock mouse cursor cleanly
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        // Pull up the victory screen panel
+        // 7. Turn on the victory screen panel
         if (victoryScreenPanel != null)
         {
             victoryScreenPanel.SetActive(true);
