@@ -1,13 +1,10 @@
 using UnityEngine;
 using System.Collections;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 using TMPro;
 
 public class EscapeTrigger : MonoBehaviour
 {
     [Header("Abyss Height Trigger")]
-    [Tooltip("The negative Y coordinate where the cutscene takes over.")]
     public float escapeHeightThreshold = -5f;
 
     [Header("The Independent Movie Set")]
@@ -15,10 +12,10 @@ public class EscapeTrigger : MonoBehaviour
     public AudioSource cutsceneAudioSource;
 
     [Header("Gameplay Camera to Track & Disable")]
-    [Tooltip("Drag your player's moving Main Camera here. The script will monitor THIS object's height!")]
     public GameObject gameplayCamera; 
 
-    [Header("UI Victory Screens (Optional)")]
+    [Header("UI Victory Screens")]
+    [Tooltip("Keep your canvas panel linked here so it turns on for the 5-second countdown!")]
     public GameObject victoryScreenPanel;
     public TextMeshProUGUI timeDisplayMesh;
 
@@ -28,25 +25,23 @@ public class EscapeTrigger : MonoBehaviour
     void Start()
     {
         gridManager = FindObjectOfType<MazeGridGenerator>();
+        
+        // Ensure everything is default on boot
         if (victoryScreenPanel != null) victoryScreenPanel.SetActive(false);
+        if (gameplayCamera != null) gameplayCamera.SetActive(true);
+        if (abyssCutsceneSet != null) abyssCutsceneSet.SetActive(false);
+        cutsceneStarted = false;
     }
 
     void Update()
     {
-        // 1. Safety check to make sure you dragged the camera into the slot
+        // Tracking the moving camera height
         if (gameplayCamera != null && !cutsceneStarted)
         {
-            // 2. Track the ACTUAL moving camera's Y position in the world!
             if (gameplayCamera.transform.position.y <= escapeHeightThreshold)
             {
                 StartCoroutine(SwitchToForcedCutscene());
             }
-        }
-
-        // Quick restart testing shortcut (Only works after cutscene begins)
-        if (cutsceneStarted && Input.GetKeyDown(KeyCode.R))
-        {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
     }
 
@@ -54,29 +49,23 @@ public class EscapeTrigger : MonoBehaviour
     {
         cutsceneStarted = true;
 
-        // 1. Turn on the cinematic movie set
-        if (abyssCutsceneSet != null)
-        {
-            abyssCutsceneSet.SetActive(true);
-        }
+        // 1. Turn on cinematic movie set
+        if (abyssCutsceneSet != null) abyssCutsceneSet.SetActive(true);
 
-        // 2. Play the scream sound
+        // 2. Play scream
         if (cutsceneAudioSource != null)
         {
             cutsceneAudioSource.volume = 0.6f; 
             cutsceneAudioSource.Play();
         }
 
-        // 3. Turn off the gameplay camera so the player loses control/vision
-        if (gameplayCamera != null)
-        {
-            gameplayCamera.SetActive(false);
-        }
+        // 3. Turn off gameplay vision
+        if (gameplayCamera != null) gameplayCamera.SetActive(false);
 
-        // 4. Wait out the frontflip animation sequence
+        // 4. Wait out frontflip animation sequence
         yield return new WaitForSeconds(2.5f);
 
-        // 5. Smoothly fade the sound away
+        // 5. Fade out sound smoothly
         if (cutsceneAudioSource != null)
         {
             float fadeDuration = 1.0f;
@@ -89,7 +78,7 @@ public class EscapeTrigger : MonoBehaviour
             cutsceneAudioSource.Stop();
         }
 
-        // 6. Calculate times from your generator
+        // 6. Grab the score/time safely from the maze generator
         if (gridManager != null)
         {
             float totalSeconds = gridManager.survivalTimer;
@@ -102,14 +91,30 @@ public class EscapeTrigger : MonoBehaviour
             }
         }
 
-        // Unlock mouse cursor cleanly
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-
-        // 7. Turn on the victory screen panel
+        // 7. Turn on your clean black victory screen panel
         if (victoryScreenPanel != null)
         {
             victoryScreenPanel.SetActive(true);
         }
+
+        // This pauses the script for exactly 5 seconds, leaving the 
+        // victory text perfectly frozen on the screen for the player.
+        yield return new WaitForSeconds(5.0f);
+
+        // 8. AUTOMATICALLY SHUT DOWN THE GAME
+        CloseGameApplication();
+    }
+
+    void CloseGameApplication()
+    {
+        Debug.Log("5 seconds are up! Shutting down the game completely.");
+        
+        // Closes a built desktop (.exe) game application cleanly
+        Application.Quit();
+        
+        #if UNITY_EDITOR
+        // Safely stops the simulator inside the Unity Editor window
+        UnityEditor.EditorApplication.isPlaying = false;
+        #endif
     }
 }
